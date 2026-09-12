@@ -1,0 +1,12 @@
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+psycopg2-binary==2.9.9
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+pydantic==2.5.0
+
+# --- INTENTIONALLY OUTDATED (SCA demo target) ---
+# PyYAML 5.3.1 -> CVE-2020-14343 (arbitrary code execution via full_load on untrusted input)
+PyYAML==5.3.1
+# requests 2.19.1 -> multiple known CVEs incl. CVE-2018-18074 (credential leak on redirect)
+requests==2.19.1
