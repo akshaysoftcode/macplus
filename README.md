@@ -32,9 +32,14 @@ the placeholders in `db/init.sql`:
 python3 -c "from passlib.hash import bcrypt; print(bcrypt.hash('Password123!'))"
 ```
 
+## Infra (Chapters 2 &amp; 3 — done)
+
+See `infra/README.md` for the actual run order, backend setup, and — importantly —
+**cost control / teardown steps**. This creates real billable AWS resources
+(EKS, NAT gateway) the moment you `apply`.
+
 ## Next chapters
 
-3. Terraform (VPC/EKS/IAM/KMS/ALB) + Checkov gate
 4. Gitleaks pre-commit + CI job
 5. SCA — Trivy fs + Dependency-Check
 6. SAST — Semgrep + SonarCloud

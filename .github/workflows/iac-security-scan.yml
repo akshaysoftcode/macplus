@@ -1,0 +1,46 @@
+name: iac-security-scan
+
+on:
+  pull_request:
+    paths:
+      - "infra/**"
+  push:
+    branches: [main]
+    paths:
+      - "infra/**"
+
+permissions:
+  contents: read
+  security-events: write   # required to upload SARIF to the Security tab
+  pull-requests: write     # required for Checkov's inline PR comments
+
+jobs:
+  checkov:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Checkov
+        id: checkov
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: infra/
+          framework: terraform
+          output_format: sarif
+          output_file_path: reports/checkov.sarif
+          soft_fail: true   # see note below
+
+      - name: Upload SARIF to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: reports/checkov.sarif
+
+# NOTE on soft_fail: true —
+# This is deliberate for the demo build so Checkov's *first* run (which
+# will flag things like the 0.0.0.0/0 EKS public endpoint CIDR) doesn't
+# hard-block your pipeline while you're still iterating. Once findings are
+# triaged and either fixed or explicitly suppressed with a documented
+# reason (Chapter 11 talks about this — audit trail for any bypass), flip
+# this to soft_fail: false so Critical/High findings actually gate the
+# merge, which is what "production-grade" means here.
