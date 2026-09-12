@@ -9,7 +9,7 @@
 #   terraform init
 #   terraform apply
 #
-# terraform.tfstate will be created locally after apply — add it to
+# terraform.tfstateaws --version will be created locally after apply — add it to
 # .gitignore (already done at repo root) and do NOT commit it; it will
 # contain resource IDs but no secrets. If you ever need to change this
 # bootstrap config again, that local state file is how Terraform knows
@@ -21,10 +21,6 @@ terraform {
     aws = {
       source  = "hashicorp/aws"
       version = "~> 5.0"
-    }
-    tls = {
-      source  = "hashicorp/tls"
-      version = "~> 4.0"
     }
   }
 }
@@ -84,16 +80,10 @@ resource "aws_dynamodb_table" "tf_lock" {
 # --- GitHub OIDC provider ---
 # This lets GitHub Actions assume AWS IAM roles via short-lived tokens —
 # no long-lived AWS access keys ever stored as a GitHub secret.
-#
-# The thumbprint is fetched dynamically rather than hardcoded: AWS has
-# announced it no longer actually validates this value for GitHub's
-# provider (it uses a library of trusted CAs instead — the field is kept
-# only because the API still requires a syntactically valid 40-char hex
-# value). Fetching it live means this never silently goes stale.
-data "tls_certificate" "github" {
-  url = "https://token.actions.githubusercontent.com/.well-known/openid-configuration"
-}
-
+# Thumbprint below is GitHub's current OIDC root CA thumbprint; AWS has
+# also started accepting a fixed placeholder here on newer provider
+# versions since it verifies via TLS, but pinning it explicitly is still
+# the documented approach.
 resource "aws_iam_openid_connect_provider" "github" {
   url = "https://token.actions.githubusercontent.com"
 
@@ -101,7 +91,9 @@ resource "aws_iam_openid_connect_provider" "github" {
     "sts.amazonaws.com",
   ]
 
-  thumbprint_list = [data.tls_certificate.github.certificates[0].sha1_fingerprint]
+  thumbprint_list = [
+    "6938fd4d98bab03faadb97b34396831e3780aea1",
+  ]
 }
 
 output "state_bucket" {

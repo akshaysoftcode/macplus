@@ -3,10 +3,9 @@ variable "cluster_name" {
 }
 
 variable "k8s_version" {
-  type    = string
-  default = "1.29"
+  type        = string
+  description = "Passed through from the calling environment."
 }
-
 variable "cluster_role_arn" {
   type = string
 }

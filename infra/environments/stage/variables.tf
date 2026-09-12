@@ -2,6 +2,10 @@ variable "aws_region" {
   type    = string
   default = "ap-south-1"
 }
+variable "k8s_version" {
+  type        = string
+  description = "EKS-supported Kubernetes minor version. Check what's currently valid before setting this: `aws eks describe-cluster-versions --query \"clusterVersions[?clusterVersionSupportInfo.support=='STANDARD'].clusterVersion\"`."
+}
 
 variable "project_name" {
   type    = string

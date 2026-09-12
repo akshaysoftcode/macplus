@@ -44,6 +44,7 @@ module "iam" {
 module "eks" {
   source              = "../../modules/eks"
   cluster_name        = "${local.name_prefix}-eks"
+  k8s_version         = var.k8s_version  
   cluster_role_arn    = module.iam.eks_cluster_role_arn
   node_role_arn       = module.iam.eks_node_role_arn
   private_subnet_ids  = module.vpc.private_subnet_ids
