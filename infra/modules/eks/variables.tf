@@ -28,7 +28,7 @@ variable "kms_key_arn" {
 
 variable "public_access_cidrs" {
   type    = list(string)
-  default = ["0.0.0.0/0"]
+  default = ["10.0.0.0/0"]
 }
 
 variable "desired_size" {
