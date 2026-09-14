@@ -1,0 +1,94 @@
+name: sast-scan
+
+on:
+  pull_request:
+    paths:
+      - "app-api/**"
+      - "app-frontend/**"
+  push:
+    branches: [main, stage]
+    paths:
+      - "app-api/**"
+      - "app-frontend/**"
+
+permissions:
+  contents: read
+  security-events: write
+  pull-requests: write
+
+jobs:
+  semgrep:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history needed for --baseline-ref diffing
+
+      - name: Create reports directory
+        run: mkdir -p reports
+
+      - name: Install Semgrep
+        run: pip install semgrep --break-system-packages
+
+      - name: Run Semgrep (baseline mode on PRs, full scan on push)
+        run: |
+          BASELINE_ARGS=""
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE=$(git merge-base origin/main HEAD)
+            BASELINE_ARGS="--baseline-commit=$BASE"
+          fi
+          semgrep scan \
+            --config=p/owasp-top-ten \
+            --config=p/security-audit \
+            --config=p/python \
+            --config=p/javascript \
+            $BASELINE_ARGS \
+            --sarif --output=reports/semgrep.sarif \
+            --error \
+            app-api app-frontend
+
+      - name: Upload SARIF to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: reports/semgrep.sarif
+          category: semgrep
+
+  sonarcloud:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: SonarQube Cloud Scan
+        uses: SonarSource/sonarqube-scan-action@v5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      - name: Enforce SonarQube Quality Gate
+        uses: SonarSource/sonarqube-quality-gate-action@master
+        timeout-minutes: 5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+# NOTES —
+#
+# sonarcloud-github-action (the action name used in earlier drafts of this
+# file) is DEPRECATED and archived by SonarSource — its own release notes
+# redirect straight to sonarqube-scan-action, which this file now uses.
+# Same SONAR_TOKEN secret, same one-time sonarcloud.io setup as before.
+#
+# Semgrep now installs via pip on a normal runner rather than running
+# inside the semgrep/semgrep container image — --baseline-ref needs git
+# operations against origin/main, and a minimal container image is an
+# unnecessary reliability risk for that versus just using the host
+# runner's already-working git installation.
+#
+# --error makes semgrep exit non-zero when findings are matched — without
+# this flag it silently exits 0 regardless of findings.
+#
+# EXPECTED FIRST RESULT: Semgrep should catch the SQL injection in
+# app-api/app/main.py (search_items) via the OWASP/security-audit
+# rulesets. Whether it also catches the missing-auth-check on
+# admin_list_users() is genuinely uncertain — report back either way.
