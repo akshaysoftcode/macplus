@@ -1,0 +1,12 @@
+# Same audit-trail philosophy as .gitleaks.toml / the checkov:skip comments:
+# every suppressed CVE needs a reason, written right here, next to the ID.
+# Format: one CVE ID per line, optional trailing comment.
+#
+# Currently empty on purpose — PyYAML==5.3.1 (CVE-2020-14343) and
+# requests==2.19.1 (multiple CVEs) in app-api/requirements.txt are the
+# Chapter 1 intentional SCA demo target. Do not add them here; remediate
+# by bumping the pinned versions once the "before" scan result is
+# captured as evidence (see VULNERABILITIES.md).
+#
+# Example of how a real suppression would look, once you have one:
+# CVE-2023-XXXXX # false positive: affected code path is never called, see PR #12

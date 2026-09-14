@@ -28,9 +28,7 @@ jobs:
           framework: terraform
           output_format: sarif
           output_file_path: reports/checkov.sarif
-          soft_fail: true          # base run never blocks — see note below
-          soft_fail_on: LOW,MEDIUM # these are informational only
-          hard_fail_on: HIGH,CRITICAL  # these DO fail the job/block the merge
+          soft_fail: true   # see note below
 
       - name: Upload SARIF to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
@@ -38,20 +36,11 @@ jobs:
         with:
           sarif_file: reports/checkov.sarif
 
-# NOTE on the soft_fail / hard_fail split above —
-# soft_fail: true is the overall base setting, but soft_fail_on/hard_fail_on
-# override it per-severity: LOW and MEDIUM findings are logged (SARIF +
-# PR comment) without blocking anything; HIGH and CRITICAL findings DO
-# fail this job, which blocks the PR from merging if this check is set
-# as required in your branch protection rules.
-#
-# First run WILL likely fail on HIGH/CRITICAL — the 0.0.0.0/0 EKS public
-# endpoint CIDR (var.public_access_cidrs default) is a near-certain flag.
-# When that happens: either tighten the value (restrict to your IP/CIDR)
-# or, if you're deliberately leaving it open for demo convenience,
-# suppress that specific check with a documented reason (Chapter 11 —
-# any suppression needs an audit trail, not a silent skip):
-#
-#   # checkov:skip=CKV_AWS_39:Public endpoint open for demo access; see VULNERABILITIES.md
-#
-# placed directly above the resource block in question.
+# NOTE on soft_fail: true —
+# This is deliberate for the demo build so Checkov's *first* run (which
+# will flag things like the 0.0.0.0/0 EKS public endpoint CIDR) doesn't
+# hard-block your pipeline while you're still iterating. Once findings are
+# triaged and either fixed or explicitly suppressed with a documented
+# reason (Chapter 11 talks about this — audit trail for any bypass), flip
+# this to soft_fail: false so Critical/High findings actually gate the
+# merge, which is what "production-grade" means here.

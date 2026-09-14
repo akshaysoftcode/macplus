@@ -4,7 +4,7 @@
 
 terraform {
   backend "s3" {
-    bucket         = "akshaydevsec-state"
+    bucket         = "akm-devsec-state"
     key            = "stage/terraform.tfstate"
     region         = "ap-south-1"
     dynamodb_table = "devsecops-tf-lock"

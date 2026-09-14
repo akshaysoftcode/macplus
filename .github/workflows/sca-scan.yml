@@ -1,0 +1,93 @@
+name: sca-scan
+
+on:
+  pull_request:
+    paths:
+      - "app-api/**"
+      - "app-frontend/**"
+  push:
+    branches: [main, stage]
+    paths:
+      - "app-api/**"
+      - "app-frontend/**"
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  trivy-fs:
+    # PRIMARY, BLOCKING gate. Trivy has its own built-in vulnerability
+    # database with real severity data — unlike Checkov, this does NOT
+    # need any external paid account to gate on HIGH/CRITICAL correctly.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Trivy filesystem scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: fs
+          scan-ref: "."
+          format: sarif
+          output: reports/trivy-fs.sarif
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+          ignore-unfixed: false
+          trivyignores: .trivyignore
+
+      - name: Upload SARIF to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: reports/trivy-fs.sarif
+          category: trivy-fs
+
+  dependency-check:
+    # SECONDARY, NON-BLOCKING. OWASP Dependency-Check pulls the full NVD
+    # CVE database on every run; without a free NVD API key, that sync is
+    # slow and prone to 403/429 rate-limit errors in CI — a known, common
+    # source of confusing failures, not a sign anything here is broken.
+    # Get a free key at https://nvd.nist.gov/developers/request-an-api-key
+    # and add it as the NVD_API_KEY repo secret to make this reliable,
+    # then flip continue-on-error to false once it's stable.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run OWASP Dependency-Check
+        continue-on-error: true
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          project: "devsecops-demo"
+          path: "."
+          format: "SARIF"
+          args: >
+            --out reports
+            --enableRetired
+            --nvdApiKey ${{ secrets.NVD_API_KEY }}
+
+            
+      - name: Upload SARIF to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: reports/dependency-check-report.sarif
+          category: dependency-check
+
+# WHY TWO TOOLS THAT BOTH DO SCA: overlap is expected and fine — Trivy
+# also does image/IaC scanning elsewhere in this pipeline so it's the one
+# worth making rock-solid; Dependency-Check is here for comparison and
+# its license-risk reporting, not as a second blocking gate. If they ever
+# disagree on a finding, that's a genuine "which tool do I trust here and
+# why" moment worth having an answer for (Chapter 13).
+#
+# TWO GOTCHAS WORTH KNOWING ABOUT THIS ACTION SPECIFICALLY:
+# 1. Its README shows a top-level `out:` input, but at least one pinned
+#    version silently ignores it — the report just never gets written to
+#    the expected path, no error raised. --out is passed through `args`
+#    instead here, which works regardless of that discrepancy.
+# 2. If NVD_API_KEY isn't set as a repo secret, --nvdApiKey gets passed
+#    an empty value rather than being omitted — harmless here since this
+#    job never blocks anything (continue-on-error: true), just worth
+#    knowing if this job's logs look odd with the secret unset.

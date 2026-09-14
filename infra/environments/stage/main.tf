@@ -51,7 +51,7 @@ module "eks" {
   public_subnet_ids   = module.vpc.public_subnet_ids
   kms_key_arn         = module.kms.key_arn
   desired_size        = 2
-  instance_types      = ["t3.medium"]
+  instance_types      = ["t3.small"]
 }
 
 # --- ALB controller IRSA role ---

@@ -28,7 +28,7 @@ variable "kms_key_arn" {
 
 variable "public_access_cidrs" {
   type    = list(string)
-  default = ["10.0.0.0/0"]
+  default = ["0.0.0.0/0"]
 }
 
 variable "desired_size" {
@@ -48,5 +48,5 @@ variable "max_size" {
 
 variable "instance_types" {
   type    = list(string)
-  default = ["t3a.medium"]
+  default = ["t3.small"]
 }
