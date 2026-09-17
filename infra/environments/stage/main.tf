@@ -50,7 +50,7 @@ module "eks" {
   private_subnet_ids  = module.vpc.private_subnet_ids
   public_subnet_ids   = module.vpc.public_subnet_ids
   kms_key_arn         = module.kms.key_arn
-  desired_size        = 2
+  desired_size        = 1
   instance_types      = ["t3.small"]
 }
 
