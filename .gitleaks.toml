@@ -1,0 +1,26 @@
+# Gitleaks config for this repo.
+#
+# DESIGN CHOICE: this repo does NOT use a .gitleaksignore fingerprint
+# file. Those fingerprints are keyed to a specific commit+file+line and
+# silently go stale the moment either changes — a suppressed finding can
+# quietly stop being suppressed (or worse, keep suppressing the WRONG
+# line) after an unrelated edit shifts line numbers. Instead, every
+# accepted false positive gets an inline `gitleaks:allow` comment
+# directly on the line it applies to, with the reason written right
+# there — same audit-trail philosophy as the `checkov:skip` comments in
+# infra/modules/eks/main.tf (Chapter 3). Grep "gitleaks:allow" in this
+# repo for the complete, self-documenting exception list.
+
+title = "devsecops-demo gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+  paths = [
+    '''\.git/''',
+    '''node_modules/''',
+    '''dist/''',
+    '''reports/''',
+    '''\.terraform/''',
+  ]

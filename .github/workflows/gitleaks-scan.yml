@@ -1,0 +1,66 @@
+name: gitleaks-scan
+
+on:
+  pull_request:
+  push:
+    branches: [main, stage]
+
+permissions:
+  contents: read
+  security-events: write   # required to upload SARIF to the Security tab
+
+jobs:
+  gitleaks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create reports directory
+        run: mkdir -p reports
+
+      - name: Run Gitleaks
+        # Using the gitleaks Docker image directly rather than
+        # gitleaks/gitleaks-action — the CLI/image itself is fully open
+        # source (MIT), but the wrapper Action has separate licensing
+        # terms for organization accounts. Running the image directly
+        # sidesteps that question entirely and is exactly what the
+        # Action does under the hood anyway.
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/repo" \
+            zricethezav/gitleaks:latest \
+            detect \
+              --source="/repo" \
+              --no-git \
+              --config="/repo/.gitleaks.toml" \
+              --report-format=sarif \
+              --report-path=/repo/reports/gitleaks.sarif \
+              --redact \
+              --exit-code=1
+
+      - name: Upload SARIF to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: reports/gitleaks.sarif
+
+# NOTE — this gate is intentionally NOT soft-fail. It's the fastest, cheapest
+# check in the whole pipeline (secrets scanning needs no build step), so it
+# runs first and blocks hard. There is no severity tiering here at all,
+# unlike the Checkov gate — a leaked credential doesn't have a "low severity"
+# version.
+#
+# The only escape hatch is the same one used everywhere else in this repo:
+# an inline `gitleaks:allow` comment on the exact line, with a reason.
+# There is no .gitleaksignore file — see .gitleaks.toml for why.
+#
+# EXPECTED FIRST RESULT: this WILL fail red the first time it runs, on the
+# hardcoded AWS keys and fallback JWT/DB secrets in app-api/app/config.py
+# (Chapter 1's planted vulnerabilities — see VULNERABILITIES.md). That's
+# the gate working correctly, not a bug in this workflow. Confirm the red
+# result once (screenshot it — that's your Chapter 13 "here's the gate
+# catching a real secret" evidence), then either remediate config.py
+# (move those values to env vars / Secrets Manager, per Chapter 9) or, if
+# you need other unrelated PRs to keep merging in the meantime, don't mark
+# this check as required in branch protection until config.py is fixed —
+# don't reach for gitleaks:allow on these two, they're the demo target.
