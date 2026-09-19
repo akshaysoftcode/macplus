@@ -23,6 +23,13 @@ spec:
           - resources:
               kinds:
                 - Pod
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+                - argocd
+                - kyverno
       validate:
         message: "An explicit image tag is required (no tag defaults to :latest, which this policy also blocks)."
         pattern:
@@ -35,6 +42,13 @@ spec:
           - resources:
               kinds:
                 - Pod
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+                - argocd
+                - kyverno
       validate:
         message: "Images must not use the :latest tag. Pin to an explicit tag, e.g. the git SHA."
         pattern:

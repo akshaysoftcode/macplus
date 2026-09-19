@@ -22,6 +22,13 @@ spec:
           - resources:
               kinds:
                 - Pod
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+                - argocd
+                - kyverno
       validate:
         message: "Privileged containers are not allowed."
         pattern:
