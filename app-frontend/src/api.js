@@ -1,4 +1,10 @@
-const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8000";
+// Relative path, proxied by nginx to the API service internally (see
+// nginx.conf). This deliberately avoids baking an absolute API URL into
+// the JS bundle at build time (Vite env vars are compile-time only) -
+// the API's actual address doesn't exist until after deploy, so a
+// build-time absolute URL would be a chicken-and-egg problem. Same-origin
+// requests via the proxy also mean CORS is no longer needed in main.py.
+const API_BASE = "/api";
 
 export async function login(username, password) {
   const res = await fetch(`${API_BASE}/auth/login`, {

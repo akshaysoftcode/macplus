@@ -65,7 +65,7 @@ data "aws_iam_policy_document" "github_actions_permissions" {
       "ecr:GetDownloadUrlForLayer",
     ]
     resources = [
-      "arn:aws:ecr:${var.aws_region}:${data.aws_caller_identity.current.account_id}:repository/${var.name_prefix}-*",
+      "arn:aws:ecr:${var.aws_region}:${data.aws_caller_identity.current.account_id}:repository/${var.ecr_repo_prefix}-*",
     ]
   }
 

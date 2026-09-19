@@ -16,6 +16,7 @@ RUN npm run build
 
 FROM nginxinc/nginx-unprivileged:1.27-alpine
 COPY --from=build /app/dist /usr/share/nginx/html
+COPY nginx.conf.template /etc/nginx/templates/default.conf.template
 # nginx-unprivileged listens on 8080 by default, not 80 - unprivileged
 # users can't bind ports below 1024, which is the whole point of it.
 EXPOSE 8080

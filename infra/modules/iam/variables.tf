@@ -24,3 +24,8 @@ variable "github_repo" {
   type        = string
   description = "Repo name only, no org prefix, e.g. devsecops-pipeline-demo"
 }
+
+variable "ecr_repo_prefix" {
+  type        = string
+  description = "Matches the actual ECR repo naming in environments/stage/main.tf (var.project_name there) - deliberately NOT the same as name_prefix, which includes -stage and doesn't match the real repo names."
+}

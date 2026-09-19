@@ -39,18 +39,19 @@ module "iam" {
   github_oidc_provider_arn  = var.github_oidc_provider_arn
   github_org                = var.github_org
   github_repo                = var.github_repo
+  ecr_repo_prefix            = var.project_name
 }
 
 module "eks" {
   source              = "../../modules/eks"
   cluster_name        = "${local.name_prefix}-eks"
-  k8s_version         = var.k8s_version  
+  k8s_version         = var.k8s_version
   cluster_role_arn    = module.iam.eks_cluster_role_arn
   node_role_arn       = module.iam.eks_node_role_arn
   private_subnet_ids  = module.vpc.private_subnet_ids
   public_subnet_ids   = module.vpc.public_subnet_ids
   kms_key_arn         = module.kms.key_arn
-  desired_size        = 1
+  desired_size        = 2
   instance_types      = ["t3.small"]
 }
 

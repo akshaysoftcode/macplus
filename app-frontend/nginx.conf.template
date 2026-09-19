@@ -1,0 +1,36 @@
+# nginx templates this file at container startup (official nginx image
+# feature, preserved in nginx-unprivileged): env vars referenced as
+# ${VAR} get substituted, and the result is written to
+# /etc/nginx/conf.d/default.conf automatically before nginx starts -
+# that's why this file lives in /etc/nginx/templates/ with a .template
+# extension rather than being used directly.
+#
+# API_UPSTREAM is set differently per environment:
+#   - docker-compose: api:8000 (the compose service name)
+#   - Kubernetes: <helm-release>-api:8000 (the Service name - see the
+#     Helm chart's deployment-frontend.yaml env block)
+# This is what makes the same image work unmodified in both places.
+
+server {
+    listen 8080;
+    server_name _;
+
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # SPA routing - any path that isn't a real file falls back to
+    # index.html so React Router (if added later) works on refresh.
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Reverse proxy to the API - browser only ever talks to this one
+    # origin, same-origin, no CORS needed.
+    location /api/ {
+        proxy_pass http://${API_UPSTREAM}/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
