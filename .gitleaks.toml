@@ -22,5 +22,5 @@ useDefault = true
     '''node_modules/''',
     '''dist/''',
     '''reports/''',
-    '''\.terraform/''',
+    '''\.terraform/''' 
   ]
