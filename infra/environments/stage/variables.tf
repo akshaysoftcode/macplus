@@ -2,10 +2,6 @@ variable "aws_region" {
   type    = string
   default = "ap-south-1"
 }
-variable "k8s_version" {
-  type        = string
-  description = "EKS-supported Kubernetes minor version. Check what's currently valid before setting this: `aws eks describe-cluster-versions --query \"clusterVersions[?clusterVersionSupportInfo.support=='STANDARD'].clusterVersion\"`."
-}
 
 variable "project_name" {
   type    = string
@@ -27,8 +23,23 @@ variable "github_repo" {
   description = "Repo name only, e.g. devsecops-pipeline-demo"
 }
 
+variable "github_owner_id" {
+  type        = string
+  description = "Numeric GitHub owner/org ID - see infra/modules/iam/variables.tf for how to get it."
+}
+
+variable "github_repo_id" {
+  type        = string
+  description = "Numeric GitHub repository ID - see infra/modules/iam/variables.tf for how to get it."
+}
+
 variable "alb_controller_policy_arn" {
   type        = string
   default     = ""
   description = "ARN of the ALB controller IAM policy (see comment in main.tf for how to create it). Leave blank until Chapter 7/10 when the controller is actually deployed."
+}
+
+variable "k8s_version" {
+  type        = string
+  description = "EKS-supported Kubernetes minor version. EKS retires old versions from new-cluster support on a rolling schedule, so check what's currently valid before setting this: `aws eks describe-cluster-versions --query \"clusterVersions[?clusterVersionSupportInfo.support=='STANDARD'].clusterVersion\"` (or the EKS console's create-cluster version dropdown). Do not trust a version hardcoded months ago."
 }

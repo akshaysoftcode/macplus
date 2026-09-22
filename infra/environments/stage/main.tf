@@ -39,6 +39,8 @@ module "iam" {
   github_oidc_provider_arn  = var.github_oidc_provider_arn
   github_org                = var.github_org
   github_repo                = var.github_repo
+  github_owner_id            = var.github_owner_id
+  github_repo_id              = var.github_repo_id
   ecr_repo_prefix            = var.project_name
 }
 
