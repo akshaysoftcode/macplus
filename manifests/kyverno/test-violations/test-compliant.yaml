@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: compliant-test
+  labels:
+    test: kyverno-compliant
+spec:
+  containers:
+    - name: nginx
+      image: nginx:1.27   # explicit, non-latest tag
+      resources:
+        limits:
+          memory: "128Mi"
+          cpu: "100m"
+      securityContext:
+        runAsNonRoot: true
+        privileged: false

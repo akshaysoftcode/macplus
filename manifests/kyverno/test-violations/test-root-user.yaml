@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-root-user
+  labels:
+    test: kyverno-violation
+spec:
+  containers:
+    - name: nginx
+      image: nginx:1.27
+      resources:
+        limits:
+          memory: "128Mi"
+          cpu: "100m"
+      # VIOLATION: no runAsNonRoot set anywhere (pod or container level)
+      # - should be denied

@@ -1,0 +1,57 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: disallow-latest-tag
+  annotations:
+    policies.kyverno.io/title: Disallow Latest Tag
+    policies.kyverno.io/category: Best Practices
+    policies.kyverno.io/description: >-
+      Images tagged :latest (or with no tag at all, which implicitly means
+      :latest) are mutable - the same tag can point at a different image
+      tomorrow. That breaks reproducible deploys and makes rollback
+      unreliable: you can't pin to "the version that was running last
+      Tuesday" if the tag itself doesn't identify a fixed image. Every
+      image must be pinned to an explicit, non-latest tag (this repo uses
+      the git SHA - see build-scan-push.yml).
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: require-image-tag
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+                - argocd
+                - kyverno
+      validate:
+        message: "An explicit image tag is required (no tag defaults to :latest, which this policy also blocks)."
+        pattern:
+          spec:
+            containers:
+              - image: "*:*"
+    - name: disallow-latest-tag
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+                - argocd
+                - kyverno
+      validate:
+        message: "Images must not use the :latest tag. Pin to an explicit tag, e.g. the git SHA."
+        pattern:
+          spec:
+            containers:
+              - image: "!*:latest"

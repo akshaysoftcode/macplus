@@ -1,0 +1,44 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: disallow-privileged-containers
+  annotations:
+    policies.kyverno.io/title: Disallow Privileged Containers
+    policies.kyverno.io/category: Pod Security Standards (Baseline)
+    policies.kyverno.io/description: >-
+      A privileged container has essentially unrestricted access to the
+      host - all Linux capabilities, direct device access, ability to
+      modify kernel parameters. It effectively breaks container
+      isolation entirely. No workload in this cluster needs it - if
+      something genuinely does, that's a signal to redesign, not a
+      reason to allow this flag.
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: privileged-containers
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+                - argocd
+                - kyverno
+      validate:
+        message: "Privileged containers are not allowed."
+        pattern:
+          spec:
+            =(ephemeralContainers):
+              - =(securityContext):
+                  =(privileged): "false"
+            =(initContainers):
+              - =(securityContext):
+                  =(privileged): "false"
+            containers:
+              - =(securityContext):
+                  =(privileged): "false"

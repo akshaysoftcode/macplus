@@ -16,8 +16,8 @@ CREATE TABLE IF NOT EXISTS items (
 -- (bcrypt hash below is a placeholder pattern — generate real hashes at
 -- setup time with `python -c "from passlib.hash import bcrypt; print(bcrypt.hash('Password123!'))"`)
 INSERT INTO users (username, password_hash, is_admin) VALUES
-    ('alice', '$2b$12$REPLACE_WITH_REAL_BCRYPT_HASH', FALSE),
-    ('admin', '$2b$12$REPLACE_WITH_REAL_BCRYPT_HASH', TRUE)
+    ('alice', '$2b$12$kBD6O7z/8msBSBIuiPdzq.K2EBSz0kA9tz7MOmkROkYq1pILpXpTa', FALSE),
+    ('admin', '$2b$12$kBD6O7z/8msBSBIuiPdzq.K2EBSz0kA9tz7MOmkROkYq1pILpXpTa', TRUE)
 ON CONFLICT DO NOTHING;
 
 INSERT INTO items (name, description, owner_id) VALUES
