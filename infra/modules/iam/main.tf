@@ -24,9 +24,18 @@ data "aws_iam_policy_document" "github_actions_trust" {
     condition {
       test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
+      # GitHub's "immutable subject claims" feature (default-on for repos
+      # created after 2026-07-15) embeds numeric owner/repo IDs in the sub
+      # claim: repo:OWNER@OWNER_ID/REPO@REPO_ID:ref:... instead of the
+      # older repo:OWNER/REPO:ref:... format. This repo falls under that
+      # default, so the condition has to match the new format or every
+      # AssumeRoleWithWebIdentity call gets silently denied regardless of
+      # how correct everything else looks (found this the hard way -
+      # decoded the actual token via a debug step to confirm the real
+      # sub value before it was obvious what had changed).
       values = [
-        "repo:${var.github_org}/${var.github_repo}:ref:refs/heads/main",
-        "repo:${var.github_org}/${var.github_repo}:ref:refs/tags/*",
+        "repo:${var.github_org}@${var.github_owner_id}/${var.github_repo}@${var.github_repo_id}:ref:refs/heads/main",
+        "repo:${var.github_org}@${var.github_owner_id}/${var.github_repo}@${var.github_repo_id}:ref:refs/tags/*",
       ]
     }
   }
