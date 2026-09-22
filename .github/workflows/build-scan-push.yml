@@ -1,18 +1,16 @@
 name: build-scan-push
-
-on:
+'on':
   push:
-    branches: [main]
+    branches:
+      - main
     paths:
-      - "app-api/**"
-      - "app-frontend/**"
+      - app-api/**
+      - app-frontend/**
   workflow_dispatch: {}
-
 permissions:
-  id-token: write     # required for OIDC AssumeRoleWithWebIdentity
+  id-token: write
   contents: read
   security-events: write
-
 jobs:
   build-scan-push:
     runs-on: ubuntu-latest
@@ -28,49 +26,60 @@ jobs:
             ecr_repo: devsecops-demo-app-frontend
     steps:
       - uses: actions/checkout@v4
-
       - name: Create reports directory
         run: mkdir -p reports
 
+        
+      - name: DEBUG - print actual OIDC token claims
+        run: >
+          TOKEN=$(curl -sSL -H "Authorization: bearer
+          $ACTIONS_ID_TOKEN_REQUEST_TOKEN"
+          "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=sts.amazonaws.com" | python3
+          -c "import sys,json; print(json.load(sys.stdin)['value'])")
+
+          python3 -c "
+            import base64, json
+            payload = '''$TOKEN'''.split('.')[1]
+            padded = payload + '=' * (-len(payload) % 4)
+            print(json.dumps(json.loads(base64.urlsafe_b64decode(padded)), indent=2))
+            "
       - name: Configure AWS credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-to-assume: '${{ secrets.AWS_ROLE_ARN }}'
           aws-region: ap-south-1
-
       - name: Login to Amazon ECR
         id: ecr-login
         uses: aws-actions/amazon-ecr-login@v2
-
       - name: Build image (local only - not pushed yet)
-        run: |
-          docker build -t ${{ matrix.ecr_repo }}:${{ github.sha }} ${{ matrix.context }}
-
+        run: >
+          docker build -t ${{ matrix.ecr_repo }}:${{ github.sha }} ${{
+          matrix.context }}
       - name: Trivy image scan (gate before push)
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: image
-          image-ref: ${{ matrix.ecr_repo }}:${{ github.sha }}
+          image-ref: '${{ matrix.ecr_repo }}:${{ github.sha }}'
           format: sarif
-          output: reports/trivy-image-${{ matrix.service }}.sarif
-          severity: HIGH,CRITICAL
-          exit-code: "1"
+          output: 'reports/trivy-image-${{ matrix.service }}.sarif'
+          severity: 'HIGH,CRITICAL'
+          exit-code: '1'
           ignore-unfixed: true
           trivyignores: .trivyignore
-
       - name: Upload SARIF to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
-          sarif_file: reports/trivy-image-${{ matrix.service }}.sarif
-          category: trivy-image-${{ matrix.service }}
-
+          sarif_file: 'reports/trivy-image-${{ matrix.service }}.sarif'
+          category: 'trivy-image-${{ matrix.service }}'
       - name: Tag and push to ECR (only reached if the scan above passed)
-        run: |
-          FULL_TAG=${{ steps.ecr-login.outputs.registry }}/${{ matrix.ecr_repo }}:${{ github.sha }}
-          docker tag ${{ matrix.ecr_repo }}:${{ github.sha }} "$FULL_TAG"
-          docker push "$FULL_TAG"
+        run: >
+          FULL_TAG=${{ steps.ecr-login.outputs.registry }}/${{ matrix.ecr_repo
+          }}:${{ github.sha }}
 
+          docker tag ${{ matrix.ecr_repo }}:${{ github.sha }} "$FULL_TAG"
+
+          docker push "$FULL_TAG"
   update-gitops-repo:
     needs: build-scan-push
     runs-on: ubuntu-latest
@@ -78,21 +87,29 @@ jobs:
       - name: Checkout gitops repo
         uses: actions/checkout@v4
         with:
-          repository: ${{ github.repository_owner }}/macplus-gitops
-          token: ${{ secrets.GITOPS_REPO_PAT }}
+          repository: '${{ github.repository_owner }}/macplus-gitops'
+          token: '${{ secrets.GITOPS_REPO_PAT }}'
           path: gitops
-
       - name: Update image tags to this build's SHA
-        run: |
+        run: >
           cd gitops
-          sed -i "s/apiTag: \".*\"/apiTag: \"${{ github.sha }}\"/" chart/values.yaml
-          sed -i "s/frontendTag: \".*\"/frontendTag: \"${{ github.sha }}\"/" chart/values.yaml
 
+          sed -i "s/apiTag: \".*\"/apiTag: \"${{ github.sha }}\"/"
+          chart/values.yaml
+
+          sed -i "s/frontendTag: \".*\"/frontendTag: \"${{ github.sha }}\"/"
+          chart/values.yaml
       - name: Commit and push
-        run: |
+        run: >
           cd gitops
+
           git config user.name "github-actions[bot]"
+
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
           git add chart/values.yaml
-          git commit -m "deploy: update image tags to ${{ github.sha }}" || echo "No changes to commit"
+
+          git commit -m "deploy: update image tags to ${{ github.sha }}" || echo
+          "No changes to commit"
+
           git push
